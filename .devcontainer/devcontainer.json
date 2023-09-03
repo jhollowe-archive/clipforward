@@ -1,0 +1,23 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go
+{
+	"name": "ClipForward",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"VARIANT": "1.21-bookworm"
+		}
+	},
+	// Install dependencies and cobra-cli
+	"postCreateCommand": ".devcontainer/setup.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"mhutchie.git-graph",
+				"streetsidesoftware.code-spell-checker",
+				"wengerk.highlight-bad-chars"
+			]
+		}
+	},
+	"remoteUser": "vscode"
+}

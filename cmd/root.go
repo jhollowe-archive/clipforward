@@ -22,12 +22,9 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
 	"os"
-	"path"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var cfgFile string
@@ -52,50 +49,11 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/clipforward.yaml)")
 	rootCmd.PersistentFlags().CountP("verbose", "v", "Adds verbose (and debug if specified twice) logging")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		conf_dir := path.Join(home, ".config/")
-
-		dir, is_set := os.LookupEnv("XDG_CONFIG_HOME")
-		if is_set {
-			conf_dir = dir
-		}
-
-		viper.AddConfigPath(home)
-		viper.AddConfigPath(conf_dir)
-		viper.AddConfigPath("/config/")
-
-		// Search config in home directory with name "clipforward" (without extension).
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("clipforward")
-	}
-
-	viper.SetEnvPrefix("clip")
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
+	rootCmd.PersistentFlags().BoolP("udp", "u", false, "switches to tunneling UDP rather than TCP, must be set on the server and client")
 }

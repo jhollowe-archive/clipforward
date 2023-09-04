@@ -23,14 +23,16 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // clientCmd represents the client command
 var clientCmd = &cobra.Command{
 	Use:   "client <port>",
-	Short: "Opens a listening port 'port' on the local machine which is forwarded to the server",
+	Short: "Opens a listening port <port> on the local machine which is forwarded to the server",
 	// Long: ``,
 	RunE: runClient,
 	Args: cobra.ExactArgs(1),
@@ -38,9 +40,42 @@ var clientCmd = &cobra.Command{
 
 func runClient(cmd *cobra.Command, args []string) error {
 	fmt.Println("client called")
+
+	// TODO use control message to check if there is a server running
+
+	// TODO validate that server is using the same protocol
+
+	// TODO validate the address is allowed
+
+	listener, err := net.Listen(viper.GetString("proto"), viper.GetString("address"))
+	if err != nil {
+		return err
+	}
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			// TODO handle error
+		}
+		go handleConnection(conn)
+	}
+
 	return nil
+}
+
+func handleConnection(conn net.Conn) {
+	var input []byte
+	count, err := conn.Read(input)
+	if err != nil {
+		// TODO handle error
+	}
+	fmt.Printf("%d: %s", count, string(input))
+
+	// DEBUG just echo back
+	conn.Write(input)
 }
 
 func init() {
 	rootCmd.AddCommand(clientCmd)
+
 }

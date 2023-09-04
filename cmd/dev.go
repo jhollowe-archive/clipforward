@@ -47,10 +47,7 @@ to quickly create a Cobra application.`,
 func runDev(cmd *cobra.Command, args []string) error {
 	fmt.Println("dev called")
 
-	err := clipboard.Init()
-	if err != nil {
-		return err
-	}
+	utils.InitClipboard()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
@@ -58,12 +55,14 @@ func runDev(cmd *cobra.Command, args []string) error {
 	fmt.Println(string(clipboard.Read(clipboard.FmtText)))
 
 	c_write, c_read := utils.GetClientClipboardIO()
-	s_write, _ := utils.GetServerClipboardIO()
+	s_write, s_read := utils.GetServerClipboardIO()
 	go func(ctx context.Context) {
 		c_write <- "hello world from the client"
+		time.Sleep(1100 * time.Millisecond)
 		s_write <- "hello world from the server"
 	}(ctx)
-	readUntilTimeout(c_read, 120*time.Second)
+	go readUntilTimeout(c_read, "CLIENT", 120*time.Second)
+	readUntilTimeout(s_read, "SERVER", 120*time.Second)
 
 	return nil
 }
@@ -72,13 +71,13 @@ func init() {
 	rootCmd.AddCommand(devCmd)
 }
 
-func readUntilTimeout(input <-chan string, timeout time.Duration) {
+func readUntilTimeout(input <-chan string, prefix string, timeout time.Duration) {
 	timer := time.NewTimer(timeout)
 
 	for {
 		select {
 		case value := <-input:
-			fmt.Printf("VALUE: %s\n", value)
+			fmt.Printf("%s: %s\n", prefix, value)
 		case <-timer.C:
 			return
 		}

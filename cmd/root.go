@@ -55,5 +55,5 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().CountP("verbose", "v", "Adds verbose (and debug if specified twice) logging")
-	rootCmd.PersistentFlags().BoolP("udp", "u", false, "switches to tunneling UDP rather than TCP, must be set on the server and client")
+	rootCmd.PersistentFlags().String("proto", "tcp", "controls the protocol for which to forward traffic")
 }

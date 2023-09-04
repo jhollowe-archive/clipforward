@@ -8,7 +8,24 @@ import (
 
 var ctx = context.Background()
 
+// var existingCB []byte
+
 const format = clipboard.FmtText
+
+func InitClipboard() {
+	err := clipboard.Init()
+	if err != nil {
+		panic(err)
+	}
+
+	// existingCB = clipboard.Read(format)
+	clipboard.Write(format, []byte(""))
+}
+
+func CleanupClipboard() {
+	// clipboard.Write(format, existingCB)
+	ctx.Done()
+}
 
 // GetClientClipboardIO retrieves channels for client clipboard I/O.
 //
@@ -54,12 +71,11 @@ func getClipboardChan() <-chan string {
 	changes := clipboard.Watch(ctx, format)
 	output := make(chan string)
 
-	output <- string(clipboard.Read(format))
-
 	go func() {
 		defer close(output)
 		for bytes := range changes {
 			str := string(bytes)
+			debug("UPDATE: %s\n", str)
 			output <- str
 		}
 	}()
@@ -70,6 +86,7 @@ func getClipboardChan() <-chan string {
 // writes all contents of channel to the clipboard
 func writeToClipboard(channel <-chan string) {
 	for str := range channel {
+		debug("WRITE: %s\n", str)
 		clipboard.Write(format, []byte(str))
 	}
 }

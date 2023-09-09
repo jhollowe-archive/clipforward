@@ -22,11 +22,12 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"clipforward/utils"
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // clientCmd represents the client command
@@ -38,44 +39,77 @@ var clientCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 }
 
+func init() {
+	rootCmd.AddCommand(clientCmd)
+}
+
 func runClient(cmd *cobra.Command, args []string) error {
 	fmt.Println("client called")
 
+	proto, err := cmd.Flags().GetString("proto")
+	cobra.CheckErr(err)
+
+	// TODO allow setting the listen address to 0.0.0.0
+	address := "127.0.0.1"
+
 	// TODO use control message to check if there is a server running
-
 	// TODO validate that server is using the same protocol
-
 	// TODO validate the address is allowed
 
-	listener, err := net.Listen(viper.GetString("proto"), viper.GetString("address"))
-	if err != nil {
-		return err
-	}
+	listener, err := net.Listen(proto, address+":"+args[0])
+	cobra.CheckErr(err)
+
+	fmt.Printf("Listening for connections to %s\n", listener.Addr().String())
 
 	for {
+		fmt.Println("Waiting for new connection...")
 		conn, err := listener.Accept()
-		if err != nil {
-			// TODO handle error
-		}
-		go handleConnection(conn)
+		cobra.CheckErr(err)
+
+		fmt.Printf("Got connection from %s\n", conn.RemoteAddr().String())
+
+		// purposefully NOT a goroutine so that there is a single connection at a time
+		// since the clipboard can only support one connection at a time
+		handleConnection(conn)
+
+		// TODO handle signals to nicely terminate
 	}
 
 	return nil
 }
 
+// func handleConnection(conn net.Conn) {
+// 	defer conn.Close()
+
+// 	conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+
+// 	var input []byte
+// 	count, err := conn.Read(input)
+// 	cobra.CheckErr(err)
+
+// 	fmt.Printf("%d: '%s'\n", count, string(input))
+
+// 	// DEBUG just echo back
+// 	conn.Write(input)
+// }
+
 func handleConnection(conn net.Conn) {
-	var input []byte
-	count, err := conn.Read(input)
-	if err != nil {
-		// TODO handle error
+	defer conn.Close()
+
+	buff := make([]byte, BUFF_SIZE)
+	for {
+		// read client request data
+		count, err := conn.Read(buff)
+		if err != nil {
+			if err != io.EOF {
+				utils.Error("failed to read data, err:", err)
+			}
+			utils.Info("Connection from %s closing\n", conn.RemoteAddr().String())
+			return
+		}
+		utils.Debug("%d: '%s'\n", count, string(buff[:count]))
+
+		// DEBUG just echo back
+		conn.Write(buff[:count])
 	}
-	fmt.Printf("%d: %s", count, string(input))
-
-	// DEBUG just echo back
-	conn.Write(input)
-}
-
-func init() {
-	rootCmd.AddCommand(clientCmd)
-
 }

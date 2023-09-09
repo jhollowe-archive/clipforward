@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -46,16 +48,34 @@ func init() {
 func runClient(cmd *cobra.Command, args []string) error {
 	fmt.Println("client called")
 
+	utils.InitClipboard()
+
 	proto, err := cmd.Flags().GetString("proto")
 	cobra.CheckErr(err)
 
 	// TODO allow setting the listen address to 0.0.0.0
 	address := "127.0.0.1"
 
+	ctl_write, ctl_read := utils.GetControlClipboardIO(utils.CLIENT)
+
+	utils.Info("Attempting to find server...\n")
+	for retries_left := 5; ; retries_left-- {
+		if retries_left == 0 {
+			errorAndExit(cmd, SERVER_NOT_FOUND, "Unable to find server. Please ensure the server is running and retry")
+		}
+		if !doPing(ctl_write, ctl_read) {
+			utils.Info("Failed to find the server, retrying %d more times\n", retries_left)
+			time.Sleep(CLIPBOARD_INTERVAL)
+		} else {
+			utils.Info("Server responded to clipboard ping")
+			break
+		}
+	}
 	// TODO use control message to check if there is a server running
 	// TODO validate that server is using the same protocol
 	// TODO validate the address is allowed
 
+	// NETWORK LISTENER SECTION //
 	listener, err := net.Listen(proto, address+":"+args[0])
 	cobra.CheckErr(err)
 
@@ -77,21 +97,6 @@ func runClient(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
-
-// func handleConnection(conn net.Conn) {
-// 	defer conn.Close()
-
-// 	conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-
-// 	var input []byte
-// 	count, err := conn.Read(input)
-// 	cobra.CheckErr(err)
-
-// 	fmt.Printf("%d: '%s'\n", count, string(input))
-
-// 	// DEBUG just echo back
-// 	conn.Write(input)
-// }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()

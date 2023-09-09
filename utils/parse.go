@@ -1,24 +1,18 @@
 package utils
 
-import (
-	"strings"
-)
+import "strings"
 
-const (
-	CLIENT           = "C"
-	SERVER           = "S"
-	CONTROL          = "M" // for Metadata
-	marker_separator = ";"
-)
-
-func FilterChannelForMarker(marker string, channel <-chan string) <-chan string {
+func FilterChannelForMarker(marker Marker, channel <-chan string) <-chan string {
 	output := make(chan string)
 
 	go func() {
 		defer close(output)
-		for str := range channel {
-			if len(str) > 0 && strings.HasPrefix(str, marker+marker_separator) {
-				output <- str
+		for raw_str := range channel {
+			if len(raw_str) > 0 {
+				payload_str, has_prefix := strings.CutPrefix(raw_str, string(marker)+SEP)
+				if has_prefix {
+					output <- payload_str
+				}
 			}
 		}
 	}()
@@ -26,15 +20,34 @@ func FilterChannelForMarker(marker string, channel <-chan string) <-chan string 
 	return output
 }
 
-func AddMarkerToChannel(marker string, channel <-chan string) <-chan string {
+func AddMarkerToChannel(marker Marker, channel <-chan string) <-chan string {
 	output := make(chan string)
 
 	go func() {
 		defer close(output)
 		for str := range channel {
-			output <- marker + marker_separator + str
+			output <- string(marker) + SEP + str
 		}
 	}()
 
 	return output
+}
+
+func getOppositeMarker(marker Marker) Marker {
+	switch marker {
+	case CLIENT:
+		return SERVER
+	case SERVER:
+		return CLIENT
+	default:
+		return NONE
+	}
+}
+
+func combineMarkers(marks ...Marker) Marker {
+	var combined Marker
+	for _, m := range marks {
+		combined += m
+	}
+	return combined
 }

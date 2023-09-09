@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"golang.design/x/clipboard"
 )
 
 // devCmd represents the dev command
@@ -51,8 +50,6 @@ func runDev(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
-
-	fmt.Println(string(clipboard.Read(clipboard.FmtText)))
 
 	c_write, c_read := utils.GetClientClipboardIO()
 	s_write, s_read := utils.GetServerClipboardIO()

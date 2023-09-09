@@ -22,7 +22,9 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"clipforward/utils"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -43,7 +45,36 @@ var serverCmd = &cobra.Command{
 func runServer(cmd *cobra.Command, args []string) error {
 	fmt.Println("server called")
 
-	// s_read, s_write := utils.GetServerClipboardIO()
+	utils.InitClipboard()
+
+	_, s_read := utils.GetServerClipboardIO()
+	ctl_write, ctl_read := utils.GetControlClipboardIO(utils.SERVER)
+	go handleServerCtl(ctl_write, ctl_read)
+
+	for msg := range s_read {
+		utils.Debug("SERVER: " + msg)
+	}
 
 	return nil
+}
+
+func handleServerCtl(ctl_write chan string, ctl_read <-chan string) {
+	for msg := range ctl_read {
+		utils.Debug("Server Ctl Handler: %s\n", msg)
+		msg_split := strings.SplitN(msg, utils.SEP, 1)
+		cmd := msg_split[0]
+		data := ""
+		if len(msg_split) == 2 {
+			data = msg_split[1]
+		}
+
+		switch cmd {
+		case PING:
+			ctl_write <- PONG
+		case DISPLAY:
+			utils.Info(data)
+		case BYE:
+			return
+		}
+	}
 }

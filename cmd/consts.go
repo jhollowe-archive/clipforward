@@ -1,6 +1,23 @@
 package cmd
 
+import "time"
+
 const (
-	BUFF_SIZE       = 4096
-	CLIPBOARD_CHARS = 2048
+	CLIPBOARD_INTERVAL = time.Second
+	BUFF_SIZE          = 4096
+	CLIPBOARD_CHARS    = 2048
+	BUFF_TIMEOUT       = time.Second
+)
+
+const (
+	DISPLAY = "DISPLAY"
+	PING    = "PING"
+	PONG    = "PONG"
+	BYE     = "BYE"
+	CLEAR   = ""
+)
+
+const (
+	MISC_ERR         = 1
+	SERVER_NOT_FOUND = 2
 )

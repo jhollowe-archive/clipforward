@@ -31,12 +31,10 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "clipforward",
-	Short: "A tool to forward TCP connections via the clipboard",
-	Long:  `Used as a pair on the destination and source, this tool uses a shared clipboard (i.e RDP, VNC, TeamViewer, AnyDesk, etc) to forward a TCP port from one host to another.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:               "clipforward",
+	Short:             "A tool to forward TCP connections via the clipboard",
+	Long:              `Used as a pair on the destination and source, this tool uses a shared clipboard (i.e RDP, VNC, TeamViewer, AnyDesk, etc) to forward a TCP port from one host to another.`,
+	PersistentPreRunE: setupSignalHandling,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -56,4 +54,18 @@ func init() {
 
 	rootCmd.PersistentFlags().CountP("verbose", "v", "Adds verbose (and debug if specified twice) logging")
 	rootCmd.PersistentFlags().String("proto", "tcp", "controls the protocol for which to forward traffic")
+}
+
+func setupSignalHandling(cmd *cobra.Command, args []string) error {
+	// signals := make(chan os.Signal, 1)
+	// signal.Notify(signals, os.Interrupt)
+	// go func() {
+	// 	for _ = range signals {
+	// 		fmt.Println("\nReceived an interrupt, stopping...")
+	// TODO make this cancel the commands correctly
+	// 		cmd.Context().Done()
+	// 	}
+	// }()
+
+	return nil
 }

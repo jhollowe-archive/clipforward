@@ -27,6 +27,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	rootCmd.AddCommand(serverCmd)
+}
+
 // serverCmd represents the client command
 var serverCmd = &cobra.Command{
 	Use:   "server <dest> <port>",
@@ -38,9 +42,8 @@ var serverCmd = &cobra.Command{
 
 func runServer(cmd *cobra.Command, args []string) error {
 	fmt.Println("server called")
-	return nil
-}
 
-func init() {
-	rootCmd.AddCommand(serverCmd)
+	// s_read, s_write := utils.GetServerClipboardIO()
+
+	return nil
 }

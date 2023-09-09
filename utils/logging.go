@@ -1,11 +1,18 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
-func info(format string, a ...any) {
+func Info(format string, a ...any) {
 	fmt.Printf(format, a...)
 }
 
-func debug(format string, a ...any) {
+func Debug(format string, a ...any) {
 	fmt.Printf(format, a...)
+}
+
+func Error(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, format, a...)
 }

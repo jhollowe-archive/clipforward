@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/devcontainers/go:${VARIANT}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libx11-dev \
+  netcat-openbsd \
   xvfb \
   && rm -rf /var/lib/apt/lists/*
 

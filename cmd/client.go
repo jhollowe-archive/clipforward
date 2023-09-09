@@ -67,10 +67,13 @@ func runClient(cmd *cobra.Command, args []string) error {
 			utils.Info("Failed to find the server, retrying %d more times\n", retries_left)
 			time.Sleep(CLIPBOARD_INTERVAL)
 		} else {
-			utils.Info("Server responded to clipboard ping")
+			utils.Info("Server responded to clipboard ping\n")
 			break
 		}
 	}
+
+	// go handleClientCtl(ctl_write, ctl_read)
+
 	// TODO use control message to check if there is a server running
 	// TODO validate that server is using the same protocol
 	// TODO validate the address is allowed
@@ -90,7 +93,7 @@ func runClient(cmd *cobra.Command, args []string) error {
 
 		// purposefully NOT a goroutine so that there is a single connection at a time
 		// since the clipboard can only support one connection at a time
-		handleConnection(conn)
+		handleClientConnection(conn)
 
 		// TODO handle signals to nicely terminate
 	}
@@ -98,23 +101,63 @@ func runClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func handleConnection(conn net.Conn) {
+func handleClientConnection(conn net.Conn) {
 	defer conn.Close()
 
+	c_write, c_read := utils.GetClientClipboardIO()
+
+	go handleClientConnectionWrite(conn, c_read)
+	handleClientConnectionRead(conn, c_write)
+}
+
+func handleClientConnectionRead(conn net.Conn, writer chan string) {
 	buff := make([]byte, BUFF_SIZE)
 	for {
 		// read client request data
 		count, err := conn.Read(buff)
 		if err != nil {
 			if err != io.EOF {
-				utils.Error("failed to read data, err:", err)
+				utils.Error("failed to read data, err: %s", err)
 			}
 			utils.Info("Connection from %s closing\n", conn.RemoteAddr().String())
 			return
 		}
 		utils.Debug("%d: '%s'\n", count, string(buff[:count]))
 
+		writer <- string(buff[:count])
+
 		// DEBUG just echo back
-		conn.Write(buff[:count])
+		// conn.Write(buff[:count])
+	}
+}
+
+func handleClientConnectionWrite(conn net.Conn, reader <-chan string) {
+	for str := range reader {
+		if len(str) == 0 {
+			return
+		} else {
+			utils.Debug("CLIENT: %s", str)
+			conn.Write([]byte(str))
+		}
+	}
+}
+
+func handleClientCtl(ctl_write chan string, ctl_read <-chan string) {
+	for msg := range ctl_read {
+		msg_split := strings.SplitN(msg, utils.SEP, 1)
+		cmd := msg_split[0]
+		data := ""
+		if len(msg_split) == 2 {
+			data = msg_split[1]
+		}
+
+		switch cmd {
+		case PING:
+			ctl_write <- PONG
+		case DISPLAY:
+			utils.Info(data)
+		case BYE:
+			return
+		}
 	}
 }

@@ -8,7 +8,8 @@ import (
 
 var ctx = context.Background()
 
-// var existingCB []byte
+type CBReader <-chan string
+type CBWriter chan string
 
 const format = clipboard.FmtText
 
@@ -18,12 +19,10 @@ func InitClipboard() {
 		panic(err)
 	}
 
-	// existingCB = clipboard.Read(format)
 	clipboard.Write(format, []byte(""))
 }
 
 func CleanupClipboard() {
-	// clipboard.Write(format, existingCB)
 	ctx.Done()
 }
 
@@ -37,7 +36,7 @@ func CleanupClipboard() {
 //   - writer: A channel of type string for writing data to the clipboard.
 //   - reader: A read-only channel of type string for reading data from
 //     the clipboard.
-func GetClientClipboardIO() (chan string, <-chan string) {
+func GetClientClipboardIO() (chan string, CBReader) {
 	cb := getClipboardChan()
 
 	writer := make(chan string)
@@ -56,7 +55,7 @@ func GetClientClipboardIO() (chan string, <-chan string) {
 //   - writer: A channel of type string for writing data to the clipboard.
 //   - reader: A read-only channel of type string for reading data from
 //     the clipboard.
-func GetServerClipboardIO() (chan string, <-chan string) {
+func GetServerClipboardIO() (CBWriter, CBReader) {
 	cb := getClipboardChan()
 
 	writer := make(chan string)
@@ -75,7 +74,7 @@ func GetServerClipboardIO() (chan string, <-chan string) {
 //   - writer: A channel of type string for writing data to the clipboard.
 //   - reader: A read-only channel of type string for reading data from
 //     the clipboard.
-func GetControlClipboardIO(marker Marker) (chan string, <-chan string) {
+func GetControlClipboardIO(marker Marker) (CBWriter, CBReader) {
 	cb := getClipboardChan()
 
 	writer := make(chan string)
@@ -103,7 +102,7 @@ func getClipboardChan() <-chan string {
 }
 
 // writes all contents of channel to the clipboard
-func writeToClipboard(channel <-chan string) {
+func writeToClipboard(channel CBWriter) {
 	for str := range channel {
 		Debug("WRITE: %s\n", str)
 		clipboard.Write(format, []byte(str))

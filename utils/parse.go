@@ -2,7 +2,7 @@ package utils
 
 import "strings"
 
-func FilterChannelForMarker(marker Marker, channel <-chan string) <-chan string {
+func FilterChannelForMarker(marker Marker, channel CBReader) CBReader {
 	output := make(chan string)
 
 	go func() {
@@ -20,7 +20,7 @@ func FilterChannelForMarker(marker Marker, channel <-chan string) <-chan string 
 	return output
 }
 
-func AddMarkerToChannel(marker Marker, channel <-chan string) <-chan string {
+func AddMarkerToChannel(marker Marker, channel CBWriter) CBWriter {
 	output := make(chan string)
 
 	go func() {

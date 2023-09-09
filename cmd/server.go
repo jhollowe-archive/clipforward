@@ -24,6 +24,8 @@ package cmd
 import (
 	"clipforward/utils"
 	"fmt"
+	"io"
+	"net"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -47,18 +49,61 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	utils.InitClipboard()
 
-	_, s_read := utils.GetServerClipboardIO()
+	proto, err := cmd.Flags().GetString("proto")
+	cobra.CheckErr(err)
+
+	dest := fmt.Sprintf("%s:%s", args[0], args[1])
+
 	ctl_write, ctl_read := utils.GetControlClipboardIO(utils.SERVER)
 	go handleServerCtl(ctl_write, ctl_read)
 
-	for msg := range s_read {
-		utils.Debug("SERVER: " + msg)
+	for {
+		handleServerConnection(proto, dest)
 	}
 
 	return nil
 }
 
-func handleServerCtl(ctl_write chan string, ctl_read <-chan string) {
+func handleServerConnection(proto string, dest string) {
+	conn, err := net.Dial(proto, dest)
+	cobra.CheckErr(err)
+	defer conn.Close()
+
+	s_write, s_read := utils.GetServerClipboardIO()
+
+	go handleClientConnectionWrite(conn, s_read)
+	handleClientConnectionRead(conn, s_write)
+}
+
+func handleServerConnectionRead(conn net.Conn, writer utils.CBWriter) {
+	buff := make([]byte, BUFF_SIZE)
+	for {
+		// read client request data
+		count, err := conn.Read(buff)
+		if err != nil {
+			if err != io.EOF {
+				utils.Error("failed to read data, err: %s", err)
+			}
+			utils.Info("Connection from %s closing\n", conn.RemoteAddr().String())
+			return
+		}
+		utils.Debug("%d: '%s'\n", count, string(buff[:count]))
+
+		writer <- string(buff[:count])
+
+		// DEBUG just echo back
+		// conn.Write(buff[:count])
+	}
+}
+
+func handleServerConnectionWrite(conn net.Conn, reader utils.CBReader) {
+	for msg := range reader {
+		utils.Debug("SERVER: " + msg)
+		conn.Write([]byte(msg))
+	}
+}
+
+func handleServerCtl(ctl_write utils.CBWriter, ctl_read utils.CBReader) {
 	for msg := range ctl_read {
 		utils.Debug("Server Ctl Handler: %s\n", msg)
 		msg_split := strings.SplitN(msg, utils.SEP, 1)

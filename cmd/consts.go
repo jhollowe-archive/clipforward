@@ -15,6 +15,7 @@ const (
 	PONG    = "PONG"
 	BYE     = "BYE"
 	CLEAR   = ""
+	ACK     = "ACK"
 )
 
 const (

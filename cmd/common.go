@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net"
 	"os"
 	"time"
 
@@ -12,8 +13,6 @@ func doPing(ctl_write chan string, ctl_read <-chan string) bool {
 	// Attempt a ping in a goroutine
 	ping_result := make(chan bool, 1)
 	go func() {
-		ctl_write <- CLEAR
-		time.Sleep(CLIPBOARD_INTERVAL)
 		ctl_write <- PING
 
 		// wait for a response and return false if timed out
@@ -31,4 +30,14 @@ func doPing(ctl_write chan string, ctl_read <-chan string) bool {
 func errorAndExit(cmd *cobra.Command, exit_code int, str string) {
 	cmd.PrintErrln(str)
 	os.Exit(exit_code)
+}
+
+func connToChannels(conn net.Conn) (chan []byte, chan []byte) {
+	reader := make(chan []byte)
+	writer := make(chan []byte)
+
+	go func() {}()
+	go func() {}()
+
+	return writer, reader
 }
